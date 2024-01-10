@@ -96,10 +96,10 @@ func SendDataKafka(producerPtr *kafka.Producer, topic string, key string, value 
 }
 
 func CloseKafka(producerPtr *kafka.Producer){
-    log.Println("======= Closing Kafka ... ========")
+    log.Println("~~~ Closing Kafka...")
 
     // wait for all messages to be delivered
     n := producerPtr.Flush(15 * 1000)
-    log.Println("Pending events still un-flushed:", n)
+    log.Println("Any pending events still un-flushed:", n)
     producerPtr.Close()
 }

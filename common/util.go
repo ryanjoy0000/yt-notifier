@@ -41,7 +41,7 @@ func ReadConfig(configFilePath string) (kafka.ConfigMap, error){
     if err != nil {
         log.Panicln("Cannot read config file:", err)
     }
-    log.Println(configFilePath, ": Config file acquired...")
+    log.Println("Config file acquired: ", configFilePath)
     return m, err
 }
 

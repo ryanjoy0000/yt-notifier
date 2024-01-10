@@ -3,7 +3,7 @@ package yt
 import (
 	"context"
 	// "encoding/json"
-	"fmt"
+	// "fmt"
 	"log"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
@@ -29,10 +29,10 @@ func(y *YTDataService) GetYTData(ctx context.Context) ([]*YTData, error){
         nextPageToken, resultSection, err = y.fetchYTPlaylist(context.Background(), (*y.confPtr)["YT_API_KEY"].(string), (*y.confPtr)["YT_PLAYLIST_ID"].(string), nextPageToken)
         if nextPageToken != "" {
             hasPageToken = true
-            fmt.Println("=== Fetching next section of results... ===.")
+            // fmt.Println("=== Fetching next section of results... ===.")
         }else{
             hasPageToken = false
-            fmt.Println("=== END of results===")
+            // fmt.Println("=== END of results===")
         }
         result = append(result, resultSection...)
     }
@@ -62,7 +62,8 @@ func (y *YTDataService)fetchYTPlaylist(ctx context.Context, apiKey string, playl
     
     // sections required from Youtube data
     sectionList := []string{"contentDetails"} //"snippet", "id" 
-    
+   
+    log.Println("fetching playlist...")
     // request youtube api
     plRespPtr, err := ytSvc.PlaylistItems.List(sectionList).PlaylistId(playlistID).PageToken(pageToken).Do()
     if err!= nil {
@@ -80,6 +81,7 @@ func (y *YTDataService)fetchYTPlaylist(ctx context.Context, apiKey string, playl
     }
 
     // Fetch Video Info
+    log.Println("fetching videos...")
     result, err := y.fetchVideos(plRespPtr, ytSvc)
     if err != nil {
         log.Println("Unable to fetch video")
@@ -99,8 +101,8 @@ func (y *YTDataService)fetchVideos(plRespPtr *yt.PlaylistItemListResponse, ytSvc
     if plRespPtr.Items != nil {
             
         // extract video ids, looping through playlist
-        for key, plItemPtr:= range plRespPtr.Items {
-            log.Println("Index: ", key)
+        for _, plItemPtr:= range plRespPtr.Items {
+            // log.Println("Index: ", key)
             videoId :=plItemPtr.ContentDetails.VideoId
             sectionList := []string{"statistics", "snippet"}  
             vidListResp, err := ytSvc.Videos.List(sectionList).Id(videoId).Do()
