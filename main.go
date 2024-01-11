@@ -6,7 +6,8 @@ import (
 	"log"
 
 	"github.com/ryanjoy0000/yt-notifier/common"
-	"github.com/ryanjoy0000/yt-notifier/yt"
+	"github.com/ryanjoy0000/yt-notifier/telegram"
+	// "github.com/ryanjoy0000/yt-notifier/yt"
 )
 
 func main(){
@@ -15,18 +16,24 @@ func main(){
     conf, err := common.ReadConfig(".conf")
     handleErr(err, "Unable to read / locate config file", true)
 
-    kafkaProperties, err := common.ReadConfig("kafka.properties") 
-    handleErr(err, "Unable to read / locate kafka config file", true)
+    // kafkaProperties, err := common.ReadConfig("kafka.properties") 
+    // handleErr(err, "Unable to read / locate kafka config file", true)
     
-    schemaUrl :="kafka.schema.properties" 
-    producerPtr, err := common.StartKafka(kafkaProperties, schemaUrl)
-    handleErr(err, "Unable to start kafka", true)
+    // schemaUrl :="kafka.schema.properties" 
+    // producerPtr, err := common.StartKafka(kafkaProperties, schemaUrl)
+    // handleErr(err, "Unable to start kafka", true)
 
-    ytSvc := yt.NewYTDataService(&conf, producerPtr)
-    _, err = ytSvc.GetYTData(context.Background())
-    handleErr(err, "Unable to fetch youtube data", false)
+    telegramSvc, err := telegram.NewTelegramService(conf["TELEGRAM_API_KEY"].(string)) 
+    handleErr(err, "unable to create telegram service", true)
+    log.Println("telegram service created...")
 
+    ctx := context.Background()
+    telegramSvc.InitTelegramBot(true, ctx)
+    handleErr(err, "unable to create telegram bot", true)
 
+    // ytSvc := yt.NewYTDataService(&conf, producerPtr)
+    // _, err = ytSvc.GetYTData(context.Background())
+    // handleErr(err, "Unable to fetch youtube data", false)
 }
 
 func handleErr(err error, msg string, shouldExit bool){
