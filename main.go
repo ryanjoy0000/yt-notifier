@@ -18,7 +18,8 @@ func main(){
     kafkaProperties, err := common.ReadConfig("kafka.properties") 
     handleErr(err, "Unable to read / locate kafka config file", true)
     
-    producerPtr, err := common.StartKafka(kafkaProperties)
+    schemaUrl :="kafka.schema.properties" 
+    producerPtr, err := common.StartKafka(kafkaProperties, schemaUrl)
     handleErr(err, "Unable to start kafka", true)
 
     ytSvc := yt.NewYTDataService(&conf, producerPtr)

@@ -7,11 +7,15 @@ import (
 	"os"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
+	// "github.com/confluentinc/confluent-kafka-go/schemaregistry"
+	// "github.com/confluentinc/confluent-kafka-go/schemaregistry/serde"
+	// "github.com/confluentinc/confluent-kafka-go/schemaregistry/serde/avro"
+	// "github.com/confluentinc/confluent-kafka-go/schemaregistry/serde/jsonschema"
 )
 
 var conf kafka.ConfigMap
 
-func StartKafka(conf1 kafka.ConfigMap)(*kafka.Producer, error){
+func StartKafka(conf1 kafka.ConfigMap, schemaUrl string)(*kafka.Producer,error){
     conf = conf1
     // create new producer
     producerPtr, err := kafka.NewProducer(&conf)
@@ -19,6 +23,28 @@ func StartKafka(conf1 kafka.ConfigMap)(*kafka.Producer, error){
         fmt.Printf("Cannot create the producer: %s", err)
         os.Exit(1)
     }
+
+    // // setup schema registry client
+    // schemaConf := schemaregistry.NewConfig(schemaUrl)
+    // schemaClient, err := schemaregistry.NewClient(schemaConf)
+    // if err != nil {
+    //     fmt.Printf("Cannot create the schema registry client: %s", err)
+    //     os.Exit(1)
+    // }
+
+    // // setup avro serializer
+    // avroSerPtr, err := avro.NewGenericSerializer(schemaClient, serde.ValueSerde, avro.NewSerializerConfig())
+    // if err != nil {
+    //     fmt.Printf("Unable to create avro serializer: %s", err)
+    //     os.Exit(1)
+    // }
+    //
+    // // setup json serializer
+    // jsonSerPtr, err := jsonschema.NewSerializer(schemaClient, serde.ValueSerde, jsonschema.NewSerializerConfig())
+    // if err != nil {
+    //     fmt.Printf("Unable to create json serializer: %s", err)
+    //     os.Exit(1)
+    // }
 
     // Go routine to handle message delivery reports & other event types
     go handleMsgDelivery(producerPtr)
@@ -73,9 +99,24 @@ func handleMsgDelivery(producerPtr *kafka.Producer){
 
 }
 
-func SendDataKafka(producerPtr *kafka.Producer, topic string, key string, value any) error{
+func SendDataKafka(producerPtr *kafka.Producer,topic string, key string, value any) error{
 
     v, _ := json.Marshal(value)
+    log.Println("payload json marshalled: ", string(v))
+    
+    // a, err := avroSerPtr.Serialize(topic, value)
+    // if err != nil {
+    //     log.Println("unable to avro serialize payload:", err)
+    //     // return err
+    // }
+    // log.Println("payload avro serialized: ", string(a))
+    //
+    // j, err := jsonSerPtr.Serialize(topic, value)
+    // if err != nil {
+    //     log.Println("unable to json serialize payload:", err)
+    //     // return err
+    // }
+    // log.Println("payload json serialized: ", string(j))
 
     // create kafka message
     msg := &kafka.Message{

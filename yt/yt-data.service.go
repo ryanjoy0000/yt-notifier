@@ -7,6 +7,8 @@ import (
 	"log"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
+	// "github.com/confluentinc/confluent-kafka-go/schemaregistry/serde/avro"
+	// "github.com/confluentinc/confluent-kafka-go/schemaregistry/serde/jsonschema"
 	"github.com/ryanjoy0000/yt-notifier/common"
 	"google.golang.org/api/option"
 	yt "google.golang.org/api/youtube/v3"
@@ -122,8 +124,9 @@ func (y *YTDataService)fetchVideos(plRespPtr *yt.PlaylistItemListResponse, ytSvc
 
 
                     // SEND DATA USING KAFKA
-                    err := common.SendDataKafka(y.producerPtr, (*y.confPtr)["KAFKA_TOPIC"].(string), v.Id, *videoPtr)
+                    err := common.SendDataKafka(y.producerPtr,(*y.confPtr)["KAFKA_TOPIC"].(string), v.Id, *videoPtr)
                     if err != nil {
+                        log.Println("unable to send data using kafka", err)
                         return nil, err
                     }
                 }    
