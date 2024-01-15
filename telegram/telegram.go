@@ -1,16 +1,17 @@
 package telegram
 
 import (
-	"bufio"
 	"context"
 	"log"
-	"os"
+	"net/url"
+	"strconv"
 	"strings"
 
 	telegramApi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-var (
+const(
+    
 	// Menu texts
 	firstMenu  = "<b>Menu 1</b>\n\nA menu with inline button."
 	secondMenu = "<b>Menu 2</b>\n\nA menu with even more buttons."
@@ -20,6 +21,13 @@ var (
 	backButton     = "Back"
 	tutorialButton = "Tutorial"
 
+
+    WELCOME_MSG = "Welcome! I will help you to keep track of your favourite YouTube videos. I can notify you in case there is a change in the likes / comments in the videos. I will need the YouTube Playlist URL to proceed. Just make sure the playlist is public."
+    YOUTUBE_URL = "https://youtube.com/"
+    ACK_1 = "Thank you. I will track this playlist and let you know if there are any changes in the likes / comments of the videos"
+)
+
+var (
 	// Keyboard layout for the first menu. One button, one row
 	firstMenuMarkup = telegramApi.NewInlineKeyboardMarkup(
 		telegramApi.NewInlineKeyboardRow(
@@ -39,7 +47,10 @@ var (
 )
 
 type TelegramBotService struct{
-    bot *telegramApi.BotAPI 
+    Bot *telegramApi.BotAPI
+    PlaylistIDChan chan string
+    ClientTelegramId chan string
+    WaitForUserInput bool
 }
 
 func NewTelegramService(apiKey string) (*TelegramBotService, error) {
@@ -50,7 +61,10 @@ func NewTelegramService(apiKey string) (*TelegramBotService, error) {
 	}
 
     t := &TelegramBotService{
-        bot: bot,
+        Bot: bot,
+        PlaylistIDChan: make(chan string),
+        ClientTelegramId: make(chan string),
+        WaitForUserInput: false,
     }
 
     return t, nil
@@ -58,25 +72,19 @@ func NewTelegramService(apiKey string) (*TelegramBotService, error) {
 
 func (t *TelegramBotService) InitTelegramBot(canDebug bool, ctx context.Context){
    
-    t.bot.Debug = canDebug
+    t.Bot.Debug = canDebug
 
     // get updates since the last offset
 	u := telegramApi.NewUpdate(0)
 	u.Timeout = 60
 
-    ctx, cancel := context.WithCancel(ctx)
-
 	// `updatesChan` receives telegram updates
-	updatesChan := t.bot.GetUpdatesChan(u)
+	updatesChan := t.Bot.GetUpdatesChan(u)
 
 	// Pass cancellable context to goroutine
 	go t.receiveUpdates(ctx, updatesChan)
 
-	log.Println("Bot is online. You can chat with the bot... ")
-
-    // waiting for a newline interruption
-    bufio.NewReader(os.Stdin).ReadBytes('\n')
-    cancel()
+	log.Println("Bot is online... ")
 }
 
 
@@ -120,24 +128,38 @@ func (t *TelegramBotService)handleMessage(message *telegramApi.Message) {
 	// Print to console
 	log.Printf("%s wrote %s", user.FirstName, text)
 
+    // grab client id
+    clientId := strconv.FormatInt(message.Chat.ID, 10)
+    log.Println("client telegram id: ", clientId)
+
 	var err error
 	if strings.HasPrefix(text, "/") {
 		err = t.handleCommand(message.Chat.ID, text)
         if err != nil {
             log.Println("unable to handle command in telegram bot", err)
         }
-	} else if len(text) > 0 {
+	} else if strings.HasPrefix(text, YOUTUBE_URL) && t.WaitForUserInput{
+        plId , _ := extractPlaylistId(text);
+        t.PlaylistIDChan<- plId
+        t.ClientTelegramId<- clientId 
+        t.WaitForUserInput = false
+        resp := telegramApi.NewMessage(message.Chat.ID, ACK_1)
+        _, err = t.Bot.Send(resp)
+        if err != nil {
+            log.Println("unable to send msg using telegram bot", err)
+        }
+    }else if len(text) > 0 {
 		msg := telegramApi.NewMessage(message.Chat.ID, text)
 		// To preserve markdown, we attach entities (bold, italic..)
 		msg.Entities = message.Entities
-		_, err = t.bot.Send(msg)
+		_, err = t.Bot.Send(msg)
         if err != nil {
             log.Println("unable to send msg using telegram bot", err)
         }
 	} else {
 		// This is equivalent to forwarding, without the sender's name
 		copyMsg := telegramApi.NewCopyMessage(message.Chat.ID, message.Chat.ID, message.MessageID)
-		_, err = t.bot.CopyMessage(copyMsg)
+		_, err = t.Bot.CopyMessage(copyMsg)
 	}
 }
 
@@ -146,12 +168,37 @@ func (t *TelegramBotService)handleCommand(chatId int64, command string) error {
 	var err error
 
 	switch command {
-        case "/menu":
-            err = t.sendMenu(chatId)
+        case "/start":
+            err = t.handleStartCommand(chatId)
             break
+        // case "/menu":
+            // err = t.sendMenu(chatId)
+            // break
         }
 
 	return err
+}
+
+// handle start command
+func (t *TelegramBotService)handleStartCommand(chatId int64) error {
+	msg := telegramApi.NewMessage(chatId, WELCOME_MSG)
+	_, err := t.Bot.Send(msg)
+    t.WaitForUserInput = true
+	return err
+}
+
+
+// extract playlistID 
+func extractPlaylistId(u string) (string, error) {
+    id := ""
+    urlPtr, err := url.Parse(u)
+    if err!= nil{
+        log.Println("unable to parse url string", err)
+    }
+    valMap, err := url.ParseQuery(urlPtr.RawQuery)
+    id = valMap["list"][0]
+    log.Println("extracted playlist id: ", id)
+    return id, err
 }
 
 func (t *TelegramBotService)handleButton(query *telegramApi.CallbackQuery) {
@@ -167,20 +214,19 @@ func (t *TelegramBotService)handleButton(query *telegramApi.CallbackQuery) {
 		text = firstMenu
 		markup = firstMenuMarkup
 	}
-
 	callbackCfg := telegramApi.NewCallback(query.ID, "")
-	t.bot.Send(callbackCfg)
+	t.Bot.Send(callbackCfg)
 
 	// Replace menu text and keyboard
 	msg := telegramApi.NewEditMessageTextAndMarkup(message.Chat.ID, message.MessageID, text, markup)
 	msg.ParseMode = telegramApi.ModeHTML
-	t.bot.Send(msg)
+	t.Bot.Send(msg)
 }
 
 func (t *TelegramBotService)sendMenu(chatId int64) error {
 	msg := telegramApi.NewMessage(chatId, firstMenu)
 	msg.ParseMode = telegramApi.ModeHTML
 	msg.ReplyMarkup = firstMenuMarkup
-	_, err := t.bot.Send(msg)
+	_, err := t.Bot.Send(msg)
 	return err
 }

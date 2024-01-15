@@ -140,7 +140,7 @@ func CloseKafka(producerPtr *kafka.Producer){
     log.Println("~~~ Closing Kafka...")
 
     // wait for all messages to be delivered
-    n := producerPtr.Flush(15 * 1000)
+    n := producerPtr.Flush(1 * 1000)
     log.Println("Any pending events still un-flushed:", n)
     producerPtr.Close()
 }

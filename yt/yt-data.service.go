@@ -19,6 +19,8 @@ var err error
 type YTDataService struct{
     producerPtr *kafka.Producer
     confPtr *kafka.ConfigMap
+    playlistID string
+    clientTelegramId string
 }
 
 func(y *YTDataService) GetYTData(ctx context.Context) ([]*YTData, error){
@@ -27,8 +29,15 @@ func(y *YTDataService) GetYTData(ctx context.Context) ([]*YTData, error){
     result := []*YTData{}
     resultSection := []*YTData{}
 
+    var pId string
+    if y.playlistID != ""{
+        pId = y.playlistID
+    }else{
+        pId = (*y.confPtr)["YT_PLAYLIST_ID"].(string)
+    }
+
     for hasPageToken{
-        nextPageToken, resultSection, err = y.fetchYTPlaylist(context.Background(), (*y.confPtr)["YT_API_KEY"].(string), (*y.confPtr)["YT_PLAYLIST_ID"].(string), nextPageToken)
+        nextPageToken, resultSection, err =  y.fetchYTPlaylist(context.Background(), (*y.confPtr)["YT_API_KEY"].(string), pId, nextPageToken)
         if nextPageToken != "" {
             hasPageToken = true
             // fmt.Println("=== Fetching next section of results... ===.")
@@ -45,10 +54,12 @@ func(y *YTDataService) GetYTData(ctx context.Context) ([]*YTData, error){
     return result, err
 }
 
-func NewYTDataService(conf1 *kafka.ConfigMap, producerPtr *kafka.Producer) *YTDataService{
+func NewYTDataService(conf1 *kafka.ConfigMap, producerPtr *kafka.Producer, playlistID string, clientTelegramId string) *YTDataService{
     return &YTDataService{
         producerPtr: producerPtr,
         confPtr: conf1,
+        playlistID: playlistID,
+        clientTelegramId: clientTelegramId,
     }
 }
 
@@ -119,6 +130,7 @@ func (y *YTDataService)fetchVideos(plRespPtr *yt.PlaylistItemListResponse, ytSvc
                         VideoTitle: v.Snippet.Title,
                         VideoLikeCount: int(v.Statistics.LikeCount),
                         VideoCommentCount: int(v.Statistics.CommentCount),
+                        ClientTelegramId: y.clientTelegramId,
                     }
                     result = append(result, videoPtr)
 
