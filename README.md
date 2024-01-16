@@ -22,8 +22,8 @@ Project is at a very rudimentary stage but functional. A more micro-service orie
 
 ## Installation instructions
 - Download and extract the zip file to a folder in the local machine.
-- Get the keys for YouTube API & Telegram API Key Create appropriate
--  config files  with the above info along with kafka properties 
+- Get the keys for YouTube API & Telegram API Key
+- Create appropriate config files  with the above info along with kafka properties 
 - Run the command in CMD (on the folder path): `make run`
 
 ## Demo
