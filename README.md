@@ -1,11 +1,11 @@
-# Youtube Notifier - A real time data processing pipeline
-**TL:DR** : This project helps in tracking changes to someone else's YouTube video/s.
+# Youtube Notifier (Telegram Bot) - A real time data processing pipeline
+**TL:DR** : This app helps in tracking changes to someone else's YouTube video/s.
 
 ## Project Description
 
 ### What your application does?
 
-This application helps in tracking the changes in the YouTube statistics (likes, comments, etc.) of a video not owned by me.
+This project is an implementation of a generic real time data processing pipeline  It helps in tracking the changes in the YouTube statistics (likes, comments, etc.) of a video (or list of videos) not owned by me on YouTube. A telegram bot at the end of the pipeline provides the relevant info as alerts.
 
 ### Technologies you used
 
