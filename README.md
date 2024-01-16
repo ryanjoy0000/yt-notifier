@@ -21,9 +21,9 @@ The strategy used here is that I start by creating a playlist of things I want t
 Project is at a very rudimentary stage but functional. A more micro-service oriented architecture will help it to be scalable. For efficiency, code refactoring is required. Deployment process can be improved with Docker and scheduler systems.
 
 ## Installation instructions
-Download and extract the zip file to a folder in the local machine.
-Get the keys for YouTube API & Telegram API Key
-Create appropriate config files  with the above info along with kafka properties
-Run the command in CMD (on the folder path): `make run`
+- Download and extract the zip file to a folder in the local machine.
+- Get the keys for YouTube API & Telegram API Key Create appropriate
+-  config files  with the above info along with kafka properties 
+- Run the command in CMD (on the folder path): `make run`
 
 ## Demo
