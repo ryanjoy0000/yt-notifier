@@ -9,7 +9,7 @@ This project is an implementation of a generic real time data processing pipelin
 
 ### Technologies you used
 
-Go, Apache Kafka, Confluent Cloud, kSQLDB, Telegram API, Google API
+Go, Apache Kafka, Confluent Cloud, ksqlDB, Telegram API, Google API
 
 ### What problem does it solve? Why did you build this project?
 
